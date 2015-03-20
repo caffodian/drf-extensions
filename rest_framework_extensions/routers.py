@@ -6,6 +6,8 @@ from rest_framework.routers import (
     DefaultRouter,
     SimpleRouter,
     Route,
+    DynamicListRoute,
+    DynamicDetailRoute,
     replace_methodname,
 )
 from rest_framework import views
@@ -42,20 +44,14 @@ class ExtendedActionLinkRouterMixin(object):
         # Dynamically generated routes.
         # Generated using @action or @link decorators on methods of the viewset.
         # List
-        Route(
+        DynamicListRoute(
             url=add_trailing_slash_if_needed(r'^{prefix}/{methodname}/$'),
-            mapping={
-                '{httpmethod}': '{methodname}',
-            },
-            name='{basename}-{methodnamehyphen}-list',
+            name='{basename}-{methodnamehyphen}',
             initkwargs={}
         ),
         # Detail
-        Route(
+        DynamicDetailRoute(
             url=add_trailing_slash_if_needed(r'^{prefix}/{lookup}/{methodname}/$'),
-            mapping={
-                '{httpmethod}': '{methodname}',
-            },
             name='{basename}-{methodnamehyphen}',
             initkwargs={}
         ),
@@ -124,13 +120,13 @@ class ExtendedActionLinkRouterMixin(object):
                 return dynamic_route[1]
 
     def get_known_actions(self):
-        return flatten([route.mapping.values() for route in self.routes])
+        return flatten([route.mapping.values() for route in self.routes if isinstance(route, Route)])
 
     def is_dynamic_route(self, route):
-        return route.mapping == {'{httpmethod}': '{methodname}'}
+        return isinstance(route, DynamicListRoute) or isinstance(route, DynamicDetailRoute)
 
     def is_list_dynamic_route(self, route):
-        return route.name == '{basename}-{methodnamehyphen}-list'
+        return isinstance(route, DynamicListRoute)
 
     def get_dynamic_routes_instances(self, viewset, route, dynamic_routes):
         dynamic_routes_instances = []
